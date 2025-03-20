@@ -168,6 +168,22 @@
             border-bottom: 1px solid #dee2e6;
         }
 
+        .summary-table th:first-child,
+        .summary-table td:first-child {
+            text-align: left;
+        }
+
+        .summary-table th:last-child,
+        .summary-table td:last-child {
+            text-align: center;
+        }
+
+        .company-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
         .summary-table th {
             background-color: #f8f9fa;
             font-weight: normal;
@@ -224,6 +240,75 @@
         .close-button:hover {
             color: #000;
         }
+
+        /* Walkthrough Overlay Styles */
+        .walkthrough-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+        }
+
+        .walkthrough-spotlight {
+            position: absolute;
+            border-radius: 4px;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
+            transition: all 0.3s ease;
+            z-index: 10000;
+        }
+
+        .walkthrough-content {
+            position: fixed;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-width: 300px;
+            z-index: 10001;
+        }
+
+        .walkthrough-content h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+
+        .walkthrough-content p {
+            margin: 0 0 15px 0;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .walkthrough-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .walkthrough-buttons button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .walkthrough-buttons .skip-button {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .walkthrough-buttons .next-button {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .walkthrough-buttons .finish-button {
+            background-color: #28a745;
+            color: white;
+        }
     </style>
 </head>
 
@@ -232,7 +317,6 @@
         <div class="header">
             <h1>Intercompany Reconciliation</h1>
             <div>
-                <button class="button button-primary" onclick="showRecoForm()">Create Reco Entry</button>
                 <button class="button button-secondary">Export Report</button>
             </div>
         </div>
@@ -267,8 +351,11 @@
 
         <div class="summary-box">
             <div class="summary-header">
-                <h3>Reconciliation Summary</h3>
-                <span class="selected-company" id="selectedCompanyLabel"></span>
+                <div class="summary-title">
+                    <h3>Reconciliation Summary</h3>
+                    <span class="selected-company" id="selectedCompanyLabel"></span>
+                </div>
+                <button class="button button-primary" onclick="showRecoForm()">Create Reco Entry</button>
             </div>
             <table class="summary-table">
                 <thead>
@@ -277,6 +364,7 @@
                         <th>Due To</th>
                         <th>Due From</th>
                         <th>Net Position</th>
+                        <th>Select</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -285,24 +373,28 @@
                         <td class="debit">$75,000</td>
                         <td class="credit">$0</td>
                         <td class="debit">($75,000)</td>
+                        <td><input type="checkbox" class="company-checkbox" onchange="updateSelectedCompanies()"></td>
                     </tr>
                     <tr>
                         <td>Company B</td>
                         <td class="debit">$75,000</td>
                         <td class="credit">$50,000</td>
                         <td class="debit">($25,000)</td>
+                        <td><input type="checkbox" class="company-checkbox" onchange="updateSelectedCompanies()"></td>
                     </tr>
                     <tr>
                         <td>Company C</td>
                         <td class="debit">$0</td>
                         <td class="credit">$100,000</td>
                         <td class="credit">$100,000</td>
+                        <td><input type="checkbox" class="company-checkbox" onchange="updateSelectedCompanies()"></td>
                     </tr>
                     <tr class="total-column">
                         <td>Total</td>
                         <td class="debit">$150,000</td>
                         <td class="credit">$150,000</td>
                         <td>$0</td>
+                        <td></td>
                     </tr>
                 </tbody>
             </table>
@@ -407,6 +499,19 @@
         </div>
     </div>
 
+    <!-- Add this before the closing body tag -->
+    <div class="walkthrough-overlay" id="walkthroughOverlay">
+        <div class="walkthrough-spotlight" id="walkthroughSpotlight"></div>
+        <div class="walkthrough-content" id="walkthroughContent">
+            <h4>Welcome to Intercompany Reconciliation</h4>
+            <p>Let's get started with creating your first reconciliation entry.</p>
+            <div class="walkthrough-buttons">
+                <button class="skip-button" onclick="skipWalkthrough()">Skip Tutorial</button>
+                <button class="next-button" onclick="nextWalkthroughStep()">Next</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         function showRecoForm() {
             document.getElementById('recoModal').style.display = 'block';
@@ -439,22 +544,76 @@
             const amount = this.querySelector('input[type="number"]').value;
             const notes = this.querySelector('textarea').value;
 
-            // Here you would typically send this data to your backend
-            console.log('Form submitted:', {
+            // Basic validation
+            if (!transactionType || transactionType === 'Select Transaction Type') {
+                alert('Please select a transaction type');
+                return;
+            }
+            if (!reference) {
+                alert('Please enter a reference number');
+                return;
+            }
+            if (!date) {
+                alert('Please select a date');
+                return;
+            }
+            if (!fromCompany || fromCompany === 'From Company') {
+                alert('Please select the from company');
+                return;
+            }
+            if (!toCompany || toCompany === 'To Company') {
+                alert('Please select the to company');
+                return;
+            }
+            if (!amount || amount <= 0) {
+                alert('Please enter a valid amount');
+                return;
+            }
+            if (fromCompany === toCompany) {
+                alert('From and To companies cannot be the same');
+                return;
+            }
+
+            // Format the data
+            const formData = {
                 transactionType,
                 reference,
                 date,
                 fromCompany,
                 toCompany,
-                amount,
+                amount: parseFloat(amount),
                 notes
-            });
+            };
+
+            // Here you would typically send this data to your backend
+            console.log('Form submitted:', formData);
+
+            // Add the new transaction to the table
+            const tbody = document.querySelector('.table tbody');
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td><input type="checkbox"></td>
+                <td>${date}</td>
+                <td><span class="transaction-type">${transactionType}</span></td>
+                <td>${reference}</td>
+                <td>${fromCompany}</td>
+                <td>${toCompany}</td>
+                <td class="debit">$${parseFloat(amount).toLocaleString()}</td>
+                <td class="credit">$${parseFloat(amount).toLocaleString()}</td>
+                <td>
+                    <button class="button button-secondary">View JE</button>
+                </td>
+            `;
+            tbody.insertBefore(newRow, tbody.firstChild);
 
             // Close the modal
             hideRecoForm();
 
-            // Show success message (you can customize this)
+            // Show success message
             alert('Reconciliation entry created successfully!');
+
+            // Update the summary
+            updateSummary();
         });
 
         function updateSummary() {
@@ -501,6 +660,135 @@
 
         // Initialize summary
         updateSummary();
+
+        // Walkthrough functionality
+        let currentStep = 0;
+        const walkthroughSteps = [
+            {
+                target: 'button.button-primary',
+                content: {
+                    title: 'Create Reconciliation Entry',
+                    description: 'Click here to create a new reconciliation entry between companies.',
+                    buttonText: 'Next'
+                }
+            },
+            {
+                target: '#recoModal .reco-form',
+                content: {
+                    title: 'Reconciliation Form',
+                    description: 'Fill in the transaction details including type, companies, and amount.',
+                    buttonText: 'Finish'
+                }
+            }
+        ];
+
+        function startWalkthrough() {
+            document.getElementById('walkthroughOverlay').style.display = 'block';
+            updateWalkthroughStep();
+        }
+
+        function updateWalkthroughStep() {
+            const step = walkthroughSteps[currentStep];
+            const targetElement = document.querySelector(step.target);
+
+            if (targetElement) {
+                const rect = targetElement.getBoundingClientRect();
+                const spotlight = document.getElementById('walkthroughSpotlight');
+                const content = document.getElementById('walkthroughContent');
+
+                // Position spotlight
+                spotlight.style.top = `${rect.top - 5}px`;
+                spotlight.style.left = `${rect.left - 5}px`;
+                spotlight.style.width = `${rect.width + 10}px`;
+                spotlight.style.height = `${rect.height + 10}px`;
+
+                // Position content - adjusted positioning logic
+                const contentWidth = 300; // max-width of content
+                const contentHeight = 150; // approximate height of content
+                let contentTop = rect.bottom + 20;
+                let contentLeft = rect.left;
+
+                // Adjust position if content would go off screen
+                if (contentLeft + contentWidth > window.innerWidth) {
+                    contentLeft = window.innerWidth - contentWidth - 20;
+                }
+                if (contentTop + contentHeight > window.innerHeight) {
+                    contentTop = rect.top - contentHeight - 20;
+                }
+
+                content.style.top = `${contentTop}px`;
+                content.style.left = `${contentLeft}px`;
+
+                // Update content
+                content.querySelector('h4').textContent = step.content.title;
+                content.querySelector('p').textContent = step.content.description;
+
+                // Update button
+                const nextButton = content.querySelector('.next-button');
+                nextButton.textContent = step.content.buttonText;
+                nextButton.onclick = currentStep === walkthroughSteps.length - 1 ? finishWalkthrough : nextWalkthroughStep;
+            } else {
+                console.error('Target element not found:', step.target);
+                finishWalkthrough();
+            }
+        }
+
+        function nextWalkthroughStep() {
+            currentStep++;
+            if (currentStep < walkthroughSteps.length) {
+                updateWalkthroughStep();
+            } else {
+                finishWalkthrough();
+            }
+        }
+
+        function skipWalkthrough() {
+            finishWalkthrough();
+        }
+
+        function finishWalkthrough() {
+            document.getElementById('walkthroughOverlay').style.display = 'none';
+            currentStep = 0;
+        }
+
+        // Start walkthrough when page loads
+        window.addEventListener('load', function () {
+            // Check if this is the first visit
+            const hasSeenWalkthrough = localStorage.getItem('hasSeenWalkthrough');
+            if (!hasSeenWalkthrough) {
+                // Add a small delay to ensure all elements are loaded
+                setTimeout(startWalkthrough, 1000); // Increased delay to 1 second
+                localStorage.setItem('hasSeenWalkthrough', 'true');
+            }
+        });
+
+        // Add a button to restart the walkthrough (for testing)
+        document.querySelector('.header').insertAdjacentHTML('beforeend',
+            '<button class="button button-secondary" onclick="startWalkthrough()" style="margin-left: 10px;">Start Tutorial</button>'
+        );
+
+        function updateSelectedCompanies() {
+            const checkboxes = document.querySelectorAll('.company-checkbox');
+            const selectedCompanies = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.closest('tr').querySelector('td:first-child').textContent);
+
+            // Update the Create Reco Entry button state
+            const recoButton = document.querySelector('.button-primary');
+            recoButton.disabled = selectedCompanies.length < 2;
+            recoButton.style.opacity = selectedCompanies.length < 2 ? '0.6' : '1';
+            recoButton.style.cursor = selectedCompanies.length < 2 ? 'not-allowed' : 'pointer';
+
+            // Update button text to show selected companies
+            if (selectedCompanies.length >= 2) {
+                recoButton.textContent = `Create Reco Entry (${selectedCompanies.length} companies)`;
+            } else {
+                recoButton.textContent = 'Create Reco Entry';
+            }
+        }
+
+        // Initialize the button state
+        updateSelectedCompanies();
     </script>
 </body>
 
