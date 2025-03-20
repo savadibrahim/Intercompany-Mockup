@@ -94,17 +94,31 @@
         }
 
         .reco-form {
-            background-color: #f8f9fa;
-            padding: 15px;
+            background-color: white;
+            padding: 20px;
             border-radius: 4px;
             margin-top: 20px;
-            display: none;
         }
 
         .form-row {
             display: flex;
             gap: 15px;
             margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .form-row select,
+        .form-row input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .form-row textarea {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
         }
 
         .transaction-type {
@@ -173,6 +187,42 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: relative;
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .close-button {
+            position: absolute;
+            right: 20px;
+            top: 10px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .close-button:hover {
+            color: #000;
         }
     </style>
 </head>
@@ -315,51 +365,97 @@
             </tbody>
         </table>
 
-        <div class="reco-form" id="recoForm">
-            <h3>Create Reconciliation Entry</h3>
-            <div class="form-row">
-                <select style="width: 200px;">
-                    <option>Select Transaction Type</option>
-                    <option>Bank Transfer</option>
-                    <option>Stock Transfer</option>
-                    <option>Payment/Invoice</option>
-                </select>
-                <input type="text" placeholder="Reference Number" style="width: 150px;">
-                <input type="date" style="width: 150px;">
-            </div>
-            <div class="form-row">
-                <select style="width: 200px;">
-                    <option>From Company</option>
-                    <option>Company A</option>
-                    <option>Company B</option>
-                    <option>Company C</option>
-                </select>
-                <select style="width: 200px;">
-                    <option>To Company</option>
-                    <option>Company A</option>
-                    <option>Company B</option>
-                    <option>Company C</option>
-                </select>
-                <input type="number" placeholder="Amount" style="width: 150px;">
-            </div>
-            <div class="form-row">
-                <textarea placeholder="Notes/Comments" style="width: 100%; height: 60px;"></textarea>
-            </div>
-            <div class="form-row">
-                <button class="button button-primary">Submit Reconciliation</button>
-                <button class="button button-secondary" onclick="hideRecoForm()">Cancel</button>
+        <div id="recoModal" class="modal">
+            <div class="modal-content">
+                <span class="close-button" onclick="hideRecoForm()">&times;</span>
+                <div class="reco-form">
+                    <h3>Create Reconciliation Entry</h3>
+                    <div class="form-row">
+                        <select style="width: 200px;">
+                            <option>Select Transaction Type</option>
+                            <option>Bank Transfer</option>
+                            <option>Stock Transfer</option>
+                            <option>Payment/Invoice</option>
+                        </select>
+                        <input type="text" placeholder="Reference Number" style="width: 150px;">
+                        <input type="date" style="width: 150px;">
+                    </div>
+                    <div class="form-row">
+                        <select style="width: 200px;">
+                            <option>From Company</option>
+                            <option>Company A</option>
+                            <option>Company B</option>
+                            <option>Company C</option>
+                        </select>
+                        <select style="width: 200px;">
+                            <option>To Company</option>
+                            <option>Company A</option>
+                            <option>Company B</option>
+                            <option>Company C</option>
+                        </select>
+                        <input type="number" placeholder="Amount" style="width: 150px;">
+                    </div>
+                    <div class="form-row">
+                        <textarea placeholder="Notes/Comments" style="width: 100%; height: 60px;"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <button class="button button-primary">Submit Reconciliation</button>
+                        <button class="button button-secondary" onclick="hideRecoForm()">Cancel</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         function showRecoForm() {
-            document.getElementById('recoForm').style.display = 'block';
+            document.getElementById('recoModal').style.display = 'block';
+            // Reset form when opening
+            document.querySelector('.reco-form').reset();
         }
 
         function hideRecoForm() {
-            document.getElementById('recoForm').style.display = 'none';
+            document.getElementById('recoModal').style.display = 'none';
         }
+
+        // Close modal when clicking outside
+        window.onclick = function (event) {
+            const modal = document.getElementById('recoModal');
+            if (event.target == modal) {
+                hideRecoForm();
+            }
+        }
+
+        // Handle form submission
+        document.querySelector('.reco-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            // Get form values
+            const transactionType = this.querySelector('select').value;
+            const reference = this.querySelector('input[type="text"]').value;
+            const date = this.querySelector('input[type="date"]').value;
+            const fromCompany = this.querySelectorAll('select')[1].value;
+            const toCompany = this.querySelectorAll('select')[2].value;
+            const amount = this.querySelector('input[type="number"]').value;
+            const notes = this.querySelector('textarea').value;
+
+            // Here you would typically send this data to your backend
+            console.log('Form submitted:', {
+                transactionType,
+                reference,
+                date,
+                fromCompany,
+                toCompany,
+                amount,
+                notes
+            });
+
+            // Close the modal
+            hideRecoForm();
+
+            // Show success message (you can customize this)
+            alert('Reconciliation entry created successfully!');
+        });
 
         function updateSummary() {
             const selectedCompany = document.getElementById('companyFilter').value;
